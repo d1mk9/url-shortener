@@ -4,9 +4,11 @@
 
 ## Возможности
 - Создание короткой ссылки (`POST /shorten`)
-- Переход по короткой ссылке (`GET /{short_id}`)
+- Переход по короткой ссылке (`GET /{short_id}`) — 307 Redirect
 - Удаление ссылки (`DELETE /{short_id}`)
-- Health-check (`GET /healthz`)
+- Health‑check (`GET /healthz`)
+
+---
 
 ## Установка и запуск
 
@@ -15,24 +17,59 @@
 - PostgreSQL
 
 ### Настройки
-Конфигурация задаётся через YAML‑файл (`CONFIG_FILE`) и переменные окружения:
+
+Конфигурация задаётся через YAML‑файл и переменные окружения.
+
+#### CONFIG_FILE (YAML)
+Укажите путь к YAML‑файлу в переменной окружения `CONFIG_FILE`.
 
 ```yaml
+# conf/config.yaml
 postgres_host: "localhost"
 postgres_port: "5432"
 postgres_db: "urlshortener"
 base_url: "http://urlshort.xy"
 ```
 
-А также переменные окружения:
+#### Важно про `base_url`
+- Должен быть **абсолютным URL** (со схемой `http` или `https`).
+- **Без завершающего слэша**. Пример: `http://urlshort.xy`.
+- Используется для построения поля `ShortURL` в ответе (`<base_url>/<short_id>`).  
+  Например, при `base_url: http://urlshort.xy` и `ShortID=abc123` сервис вернёт
+  `ShortURL: http://urlshort.xy/abc123`.
 
+#### Переменные окружения (секреты не коммитим)
 ```bash
 export POSTGRES_USER=<username>
 export POSTGRES_PASSWORD=<password>
+export CONFIG_FILE=./conf/config.yaml
 ```
 
-### Makefile команды
-В проекте есть удобный `Makefile`:
+---
+
+## Миграции
+
+```bash
+# применить
+go run ./cmd/app migrate up
+
+# откатить одну
+go run ./cmd/app migrate down
+```
+
+---
+
+## Запуск сервера
+
+```bash
+POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres CONFIG_FILE=./conf/config.yaml   go run ./cmd/app serve
+```
+
+Сервер поднимется на `http://localhost:8080`.
+
+---
+
+## Makefile (опционально)
 
 ```makefile
 .PHONY: run migrate-up migrate-down tidy
@@ -50,19 +87,34 @@ tidy:
 	go mod tidy
 ```
 
+---
+
 ## REST API
 
 ### Создать короткую ссылку
+- `Expiry` — строка формата `time.Duration` (например, `24h`, `15m`). Опционально.  
+- `MaxVisits` — максимум переходов. `0` означает «без ограничений». Опционально.
+
 ```bash
-curl -i -X POST http://localhost:8080/shorten \
-  -H "Content-Type: application/json" \
-  -d '{"OriginalURL":"https://example.com","MaxVisits":3,"Expiry":"24h"}'
+curl -i -X POST http://localhost:8080/shorten   -H "Content-Type: application/json"   -d '{"OriginalURL":"https://example.com","MaxVisits":3,"Expiry":"24h"}'
+```
+
+Пример ответа:
+```json
+{
+  "$schema": "http://localhost:8080/schemas/ShortenResponse.json",
+  "ShortURL": "http://urlshort.xy/abc123xy",
+  "ShortID": "abc123xy",
+  "ExpiresAt": "2025-09-15T12:00:00Z",
+  "MaxVisits": 3
+}
 ```
 
 ### Перейти по короткой ссылке
 ```bash
 curl -i http://localhost:8080/<short_id>
 ```
+Ответ: `307 Temporary Redirect` + заголовок `Location: <original_url>` и `Cache-Control: no-store`.
 
 ### Удалить ссылку
 ```bash
@@ -74,13 +126,13 @@ curl -i -X DELETE http://localhost:8080/<short_id>
 ## Ошибки
 
 ### 400 Bad Request
-Некорректный ввод (например, неподдерживаемая схема URL или неверный формат TTL).
+Некорректный ввод (неподдерживаемая схема URL, неверный формат `Expiry`).
 ```json
 {
   "$schema": "/schemas/ErrorModel.json",
   "title": "Bad Request",
   "status": 400,
-  "detail": "original_url must use http or https"
+  "detail": "invalid expiry duration"
 }
 ```
 
@@ -96,7 +148,7 @@ curl -i -X DELETE http://localhost:8080/<short_id>
 ```
 
 ### 409 Conflict
-Коллизия `short_id`.
+Коллизия при генерации `short_id`.
 ```json
 {
   "$schema": "/schemas/ErrorModel.json",
@@ -116,3 +168,5 @@ curl -i -X DELETE http://localhost:8080/<short_id>
   "detail": "expired"
 }
 ```
+
+---
