@@ -9,8 +9,6 @@ import (
 )
 
 var (
-	ErrInvalidURL   = errors.New("invalid url")
-	ErrTTLInvalid   = errors.New("invalid ttl")
 	ErrConflict     = errors.New("short id conflict")
 	ErrNotFound     = errors.New("not found")
 	ErrExpired      = errors.New("expired")

@@ -67,8 +67,6 @@ func (h *Handlers) Create(ctx context.Context, in *ShortenInput) (*ShortenOutput
 		switch {
 		case errors.Is(err, service.ErrConflict):
 			return nil, huma.Error409Conflict("")
-		default:
-			return nil, huma.Error500InternalServerError("")
 		}
 	}
 
