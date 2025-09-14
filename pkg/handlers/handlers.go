@@ -15,7 +15,7 @@ import (
 
 type ShortenRequest struct {
 	OriginalURL string `required:"true" format:"uri"`
-	MaxVisits   *int64 `json:",omitempty" minimum:"0"`
+	MaxVisits   int64  `json:",omitempty" minimum:"0"`
 	Expiry      string `json:",omitempty"`
 }
 
@@ -27,7 +27,7 @@ type ShortenResponse struct {
 	ShortURL  string
 	ShortID   string
 	ExpiresAt *time.Time `json:",omitempty"`
-	MaxVisits *int64
+	MaxVisits int64      `json:",omitempty"`
 }
 
 type ShortenOutput struct {
@@ -62,16 +62,13 @@ func (h *Handlers) Create(ctx context.Context, in *ShortenInput) (*ShortenOutput
 		}
 	}
 
-	mv := in.Body.MaxVisits
-	if mv != nil && *mv == 0 {
-		mv = nil
-	}
-
-	sl, err := h.svc.CreateShortLink(ctx, u.String(), ttl, mv)
+	sl, err := h.svc.CreateShortLink(ctx, u.String(), ttl, in.Body.MaxVisits)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrConflict):
 			return nil, huma.Error409Conflict("")
+		default:
+			return nil, huma.Error500InternalServerError("")
 		}
 	}
 

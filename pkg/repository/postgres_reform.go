@@ -61,7 +61,7 @@ func (r *PostgresRepository) Resolve(ctx context.Context, shortID string) (strin
 		return "", ErrExpired
 	}
 
-	if sl.MaxVisits != nil && sl.Visits >= *sl.MaxVisits {
+	if sl.MaxVisits > 0 && sl.Visits >= sl.MaxVisits {
 		return "", ErrLimitReached
 	}
 

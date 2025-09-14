@@ -1,6 +1,8 @@
 package service
 
 import (
+	"strings"
+
 	"github.com/google/uuid"
 )
 
@@ -17,7 +19,7 @@ func NewUUIDGen(length int) *uuidGen {
 }
 
 func (g *uuidGen) NewID() (string, error) {
-	id := uuid.NewString()
+	id := strings.ReplaceAll(uuid.NewString(), "-", "")
 	if len(id) > g.length {
 		return id[:g.length], nil
 	}

@@ -14,6 +14,6 @@ type ShortLink struct {
 	OriginalURL string     `reform:"original_url"`
 	CreatedAt   time.Time  `reform:"created_at"`
 	ExpiresAt   *time.Time `reform:"expires_at"`
-	MaxVisits   *int64     `reform:"max_visits"`
+	MaxVisits   int64      `reform:"max_visits"`
 	Visits      int64      `reform:"visits"`
 }

@@ -18,7 +18,7 @@ var (
 )
 
 type ShortLink interface {
-	CreateShortLink(ctx context.Context, originalURL string, ttl *time.Duration, maxVisits *int64) (*models.ShortLink, error)
+	CreateShortLink(ctx context.Context, originalURL string, ttl *time.Duration, maxVisits int64) (*models.ShortLink, error)
 	Resolve(ctx context.Context, shortID string) (string, error)
 	Delete(ctx context.Context, shortID string) error
 }
@@ -37,7 +37,7 @@ func NewShortLinkService(repo repository.Repository, gen IDGenerator) *service {
 	}
 }
 
-func (s *service) CreateShortLink(ctx context.Context, originalURL string, ttl *time.Duration, maxVisits *int64) (*models.ShortLink, error) {
+func (s *service) CreateShortLink(ctx context.Context, originalURL string, ttl *time.Duration, maxVisits int64) (*models.ShortLink, error) {
 	now := time.Now().UTC()
 
 	id, err := s.idGen.NewID()
@@ -67,14 +67,21 @@ func (s *service) CreateShortLink(ctx context.Context, originalURL string, ttl *
 		return nil, err
 	}
 
+	s.cache.Set(sl.ShortID, CacheEntry{
+		OriginalURL: sl.OriginalURL,
+		ExpiresAt:   sl.ExpiresAt,
+		MaxVisits:   sl.MaxVisits,
+	})
+
 	return sl, nil
 }
 
 func (s *service) Resolve(ctx context.Context, shortID string) (string, error) {
-	if ce, ok := s.cache.Get(shortID); ok && ce.ExpiresAt != nil && time.Now().After(*ce.ExpiresAt) {
-		return "", ErrExpired
+	if ce, ok := s.cache.Get(shortID); ok && ce.ExpiresAt != nil {
+		if time.Now().After(*ce.ExpiresAt) {
+			return "", ErrExpired
+		}
 	}
-
 	orig, err := s.repo.Resolve(ctx, shortID)
 	if err != nil {
 		switch {
@@ -88,6 +95,7 @@ func (s *service) Resolve(ctx context.Context, shortID string) (string, error) {
 			return "", err
 		}
 	}
+
 	return orig, nil
 }
 
