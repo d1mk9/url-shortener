@@ -1,0 +1,4 @@
+postgres_host: localhost
+postgres_port: 5432
+postgres_db: urlshortener
+base_url: http://urlshort.xy
