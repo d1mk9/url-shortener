@@ -4,18 +4,18 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	PostgresHost     string `mapstructure:"postgres_host"`
-	PostgresPort     string `mapstructure:"postgres_port"`
-	PostgresDB       string `mapstructure:"postgres_db"`
-	PostgresUser     string `mapstructure:"postgres_user"`
-	PostgresPassword string `mapstructure:"postgres_password"`
-	BaseURL          string `mapstructure:"base_url"`
+	PostgresHost     string `mapstructure:"postgres_host" validate:"required,hostname|ip"`
+	PostgresPort     string `mapstructure:"postgres_port" validate:"required,numeric"`
+	PostgresDB       string `mapstructure:"postgres_db" validate:"required"`
+	PostgresUser     string `mapstructure:"postgres_user" validate:"required"`
+	PostgresPassword string `mapstructure:"postgres_password" validate:"required"`
+	BaseURL          string `mapstructure:"base_url" validate:"required,url,excludes=/"`
 }
 
 func (c Config) PostgresDSN() string {
@@ -39,7 +39,7 @@ func MustLoad() *Config {
 		log.Fatal("CONFIG_FILE is required")
 	}
 	v.SetConfigFile(cf)
-	
+
 	_ = v.BindEnv("postgres_user", "POSTGRES_USER")
 	_ = v.BindEnv("postgres_password", "POSTGRES_PASSWORD")
 
@@ -51,36 +51,11 @@ func MustLoad() *Config {
 	if err := v.UnmarshalExact(&cfg); err != nil {
 		log.Fatalf("config: unmarshal: %v", err)
 	}
-	validate(&cfg)
+
+	validate := validator.New()
+	if err := validate.Struct(&cfg); err != nil {
+		log.Fatalf("config: validation failed: %v", err)
+	}
 
 	return &cfg
-}
-
-func validate(cfg *Config) {
-	var missing []string
-
-	if cfg.PostgresHost == "" {
-		missing = append(missing, "postgres_host")
-	}
-	if cfg.PostgresPort == "" {
-		missing = append(missing, "postgres_port")
-	}
-	if cfg.PostgresDB == "" {
-		missing = append(missing, "postgres_db")
-	}
-	if cfg.PostgresUser == "" {
-		missing = append(missing, "postgres_user / POSTGRES_USER")
-	}
-	if cfg.PostgresPassword == "" {
-		missing = append(missing, "postgres_password / POSTGRES_PASSWORD")
-	}
-	if cfg.BaseURL == "" {
-		missing = append(missing, "base_url")
-	} else if strings.HasSuffix(cfg.BaseURL, "/") {
-		missing = append(missing, "base_url must not end with '/'")
-	}
-
-	if len(missing) > 0 {
-		log.Fatalf("config: missing/invalid keys:\n  - %s", strings.Join(missing, "\n  - "))
-	}
 }
