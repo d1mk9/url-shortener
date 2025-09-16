@@ -10,7 +10,7 @@ import (
 )
 
 type Config struct {
-	PostgresHost     string `mapstructure:"postgres_host" validate:"required,hostname|ip"`
+	PostgresHost     string `mapstructure:"postgres_host" validate:"required,hostname"`
 	PostgresPort     string `mapstructure:"postgres_port" validate:"required,numeric"`
 	PostgresDB       string `mapstructure:"postgres_db" validate:"required"`
 	PostgresUser     string `mapstructure:"postgres_user" validate:"required"`

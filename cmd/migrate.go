@@ -6,7 +6,7 @@ import (
 	"url-shortener/pkg/config"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-	_ "github.com/lib/pq"             
+	_ "github.com/lib/pq"
 
 	"github.com/pressly/goose/v3"
 	"github.com/spf13/cobra"
@@ -25,7 +25,7 @@ var migrateUpCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := config.MustLoad()
 
-		db, err := goose.OpenDBWithDriver("pgx", cfg.PostgresDSN())
+		db, err := goose.OpenDBWithDriver("postgres", cfg.PostgresDSN())
 		if err != nil {
 			log.Fatalf("failed to open DB: %v", err)
 		}
