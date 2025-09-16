@@ -15,7 +15,7 @@ type Config struct {
 	PostgresDB       string `mapstructure:"postgres_db" validate:"required"`
 	PostgresUser     string `mapstructure:"postgres_user" validate:"required"`
 	PostgresPassword string `mapstructure:"postgres_password" validate:"required"`
-	BaseURL          string `mapstructure:"base_url" validate:"required,url,excludes=/"`
+	BaseURL          string `mapstructure:"base_url" validate:"required,url,endsnotwith=/"`
 }
 
 func (c Config) PostgresDSN() string {
