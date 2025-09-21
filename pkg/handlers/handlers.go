@@ -64,8 +64,7 @@ func (h *Handlers) Create(ctx context.Context, in *ShortenInput) (*ShortenOutput
 
 	sl, err := h.svc.CreateShortLink(ctx, u.String(), ttl, in.Body.MaxVisits)
 	if err != nil {
-		switch {
-		case errors.Is(err, service.ErrConflict):
+		if errors.Is(err, service.ErrConflict) {
 			return nil, huma.Error409Conflict("")
 		}
 	}

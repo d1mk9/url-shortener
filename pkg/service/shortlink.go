@@ -44,7 +44,7 @@ func (s *service) CreateShortLink(ctx context.Context, originalURL string, ttl *
 	}
 
 	var expiresAt *time.Time
-	if ttl != nil && *ttl > 0 {
+	if ttl != nil {
 		t := now.Add(*ttl)
 		expiresAt = &t
 	}

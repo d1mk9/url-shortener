@@ -1,9 +1,14 @@
 package service
 
 import (
-	"sync"
 	"time"
+
+	lru "github.com/hashicorp/golang-lru/v2"
 )
+
+type InMemoryCache struct {
+	cache *lru.Cache[string, CacheEntry]
+}
 
 type CacheEntry struct {
 	OriginalURL string
@@ -11,30 +16,19 @@ type CacheEntry struct {
 	MaxVisits   int64
 }
 
-type InMemoryCache struct {
-	mu   sync.RWMutex
-	data map[string]CacheEntry
-}
-
 func newInMemoryCache() *InMemoryCache {
-	return &InMemoryCache{data: make(map[string]CacheEntry)}
+	c, _ := lru.New[string, CacheEntry](10000)
+	return &InMemoryCache{cache: c}
 }
 
 func (c *InMemoryCache) Set(key string, val CacheEntry) {
-	c.mu.Lock()
-	c.data[key] = val
-	c.mu.Unlock()
+	c.cache.Add(key, val)
 }
 
 func (c *InMemoryCache) Get(key string) (CacheEntry, bool) {
-	c.mu.RLock()
-	v, ok := c.data[key]
-	c.mu.RUnlock()
-	return v, ok
+	return c.cache.Get(key)
 }
 
 func (c *InMemoryCache) Delete(key string) {
-	c.mu.Lock()
-	delete(c.data, key)
-	c.mu.Unlock()
+	c.cache.Remove(key)
 }
