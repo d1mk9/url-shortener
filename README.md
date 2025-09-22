@@ -168,5 +168,6 @@ curl -i -X DELETE http://localhost:8080/<short_id>
   "detail": "expired"
 }
 ```
-
+TODO:
+- Добавить аналитику
 ---

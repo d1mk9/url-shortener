@@ -19,4 +19,3 @@ type Repository interface {
 	Resolve(ctx context.Context, shortID string) (string, error)
 	Delete(ctx context.Context, shortID string) error
 }
-
